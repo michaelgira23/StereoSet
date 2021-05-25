@@ -15,7 +15,10 @@ import dataloader
 from intersentence_loader import IntersentenceDataset
 from models import models
 
+from universal_computation.fpt_antibias import FPTAntiBias
+
 init()
+
 
 def parse_args():
     parser = ArgumentParser()
@@ -35,7 +38,7 @@ def parse_args():
 
     parser.add_argument("--intersentence-model",
                         default="ModelNSP", type=str, help="Choose a intersentence model architecture.")
-    parser.add_argument("--intersentence-load-path", default=None, 
+    parser.add_argument("--intersentence-load-path", default=None,
                         help="Load a pretrained model for the intersentence task.")
 
     parser.add_argument("--tokenizer", default="GPT2Tokenizer", type=str)
@@ -132,7 +135,8 @@ class BiasEvaluator(object):
                 # ensure that we have a probability on every token
                 assert len(tokens) == len(joint_sentence_probability)
 
-                score = np.sum([np.log2(i) for i in joint_sentence_probability]) 
+                score = np.sum([np.log2(i)
+                               for i in joint_sentence_probability])
                 score /= len(joint_sentence_probability)
                 score = np.power(2, score)
 
@@ -250,8 +254,49 @@ class BiasEvaluator(object):
         print(
             f"{Fore.LIGHTBLUE_EX}Evaluating bias on intersentence tasks...{Style.RESET_ALL}")
         nsp_dim = 300
+
+        experiment_params = dict(
+            model_name='gpt2',
+            input_max_dim=50,
+            pretrained=True,
+            freeze_trans=True,  # if False, we don't check arguments other than in and out
+            freeze_linear=False,
+            freeze_pos=False,
+            freeze_ln=False,
+            freeze_attn=True,
+            freeze_ff=True,
+            freeze_out=False,
+            linear_layer_sizes=None,  # not in paper, but can specify layer sizes for an MLP,
+            # ex. [32, 32] creates a 2-layer MLP with dimension 32
+            out_layer_sizes=None,
+            learning_rate=1e-3,
+            batch_size=2,
+            dropout=0.1,
+            orth_gain=1.41,
+            position_ids=None,
+            return_last_only=True,
+        )
+
         model = getattr(models, self.INTERSENTENCE_MODEL)(
-            self.PRETRAINED_CLASS, nsp_dim=nsp_dim).to(self.device)
+            self.PRETRAINED_CLASS, nsp_dim=nsp_dim).to(self.device) if self.INTERSENTENCE_MODEL != 'GPT2LMAntibias' else FPTAntiBias(
+                input_max_dim=experiment_params['input_max_dim'],
+                model_name=experiment_params['model_name'],
+                pretrained=experiment_params['pretrained'],
+                return_last_only=experiment_params['return_last_only'],
+                linear_layer_sizes=experiment_params['linear_layer_sizes'],
+                out_layer_sizes=experiment_params['out_layer_sizes'],
+                freeze_trans=experiment_params['freeze_trans'],
+                freeze_linear=experiment_params['freeze_linear'],
+                freeze_pos=experiment_params['freeze_pos'],
+                freeze_ln=experiment_params['freeze_ln'],
+                freeze_attn=experiment_params['freeze_attn'],
+                freeze_ff=experiment_params['freeze_ff'],
+                freeze_out=experiment_params['freeze_out'],
+                position_ids=experiment_params['position_ids'],
+                dropout=experiment_params['dropout'],
+                orth_gain=experiment_params['orth_gain'],
+                device=self.device
+        ).to(self.device)
 
         if "gpt2" in args.tokenizer.lower():
             print("Adding <PAD> token to tokenizer...")
