@@ -13,9 +13,7 @@ from tqdm import tqdm
 
 import dataloader
 from intersentence_loader import IntersentenceDataset
-from models import models
-
-from universal_computation.fpt_antibias import FPTAntiBias
+from models import models, antibias_model
 
 init()
 
@@ -104,7 +102,7 @@ class BiasEvaluator(object):
             f"{Fore.LIGHTRED_EX}Evaluating bias on intrasentence tasks...{Style.RESET_ALL}")
 
         model = getattr(models, self.INTRASENTENCE_MODEL)(
-            self.PRETRAINED_CLASS).to(self.device)
+            self.PRETRAINED_CLASS).to(self.device) if self.INTRASENTENCE_MODEL != 'GPT2LMAntibias' else antibias_model(self.device)
         model.eval()
 
         start_token = torch.tensor(self.tokenizer.encode(
@@ -255,48 +253,8 @@ class BiasEvaluator(object):
             f"{Fore.LIGHTBLUE_EX}Evaluating bias on intersentence tasks...{Style.RESET_ALL}")
         nsp_dim = 300
 
-        experiment_params = dict(
-            model_name='gpt2',
-            input_max_dim=50,
-            pretrained=True,
-            freeze_trans=True,  # if False, we don't check arguments other than in and out
-            freeze_linear=False,
-            freeze_pos=False,
-            freeze_ln=False,
-            freeze_attn=True,
-            freeze_ff=True,
-            freeze_out=False,
-            linear_layer_sizes=None,  # not in paper, but can specify layer sizes for an MLP,
-            # ex. [32, 32] creates a 2-layer MLP with dimension 32
-            out_layer_sizes=None,
-            learning_rate=1e-3,
-            batch_size=2,
-            dropout=0.1,
-            orth_gain=1.41,
-            position_ids=None,
-            return_last_only=True,
-        )
-
         model = getattr(models, self.INTERSENTENCE_MODEL)(
-            self.PRETRAINED_CLASS, nsp_dim=nsp_dim).to(self.device) if self.INTERSENTENCE_MODEL != 'GPT2LMAntibias' else FPTAntiBias(
-                input_max_dim=experiment_params['input_max_dim'],
-                model_name=experiment_params['model_name'],
-                pretrained=experiment_params['pretrained'],
-                return_last_only=experiment_params['return_last_only'],
-                linear_layer_sizes=experiment_params['linear_layer_sizes'],
-                out_layer_sizes=experiment_params['out_layer_sizes'],
-                freeze_trans=experiment_params['freeze_trans'],
-                freeze_linear=experiment_params['freeze_linear'],
-                freeze_pos=experiment_params['freeze_pos'],
-                freeze_ln=experiment_params['freeze_ln'],
-                freeze_attn=experiment_params['freeze_attn'],
-                freeze_ff=experiment_params['freeze_ff'],
-                freeze_out=experiment_params['freeze_out'],
-                position_ids=experiment_params['position_ids'],
-                dropout=experiment_params['dropout'],
-                orth_gain=experiment_params['orth_gain'],
-                device=self.device
-        ).to(self.device)
+            self.PRETRAINED_CLASS, nsp_dim=nsp_dim).to(self.device) if self.INTERSENTENCE_MODEL != 'GPT2LMAntibias' else antibias_model(self.device)
 
         if "gpt2" in args.tokenizer.lower():
             print("Adding <PAD> token to tokenizer...")
