@@ -108,8 +108,14 @@ class BiasEvaluator(object):
         start_token = torch.tensor(self.tokenizer.encode(
             self.UNCONDITIONAL_START_TOKEN)).to(self.device).unsqueeze(0)
         initial_token_probabilities = model(start_token)
+
+        print(len(initial_token_probabilities))
+        print(initial_token_probabilities[0].shape)
+
         initial_token_probabilities = torch.softmax(
             initial_token_probabilities[0], dim=-1)
+
+        print('softmax', initial_token_probabilities.shape)
 
         # ensure that our batch size is 1, and that our initial token isn't split into subwords.
         assert initial_token_probabilities.shape[0] == 1

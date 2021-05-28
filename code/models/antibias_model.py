@@ -41,5 +41,6 @@ def antibias_model(device):
         position_ids=experiment_params['position_ids'],
         dropout=experiment_params['dropout'],
         orth_gain=experiment_params['orth_gain'],
-        device=device
+        device=device,
+        stereo_set=True
     ).to(device)
