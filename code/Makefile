@@ -44,7 +44,7 @@ xlnet-large-cased:
 
 gpt2-small:
 	source ../../universal-computation/path.sh && \
-	python3 eval_generative_models.py --pretrained-class gpt2 --intrasentence-model GPT2LM --intersentence-model ModelNSP --tokenizer GPT2Tokenizer --max-seq-length 128 --intersentence-load-path models/pretrained_models/GPT2Model_gpt2_0.0005.pth --batch-size 1 --input-file $(INPUT_FILE) --output-dir $(OUTPUT_DIR) $(FLAGS)
+	python3 eval_generative_models.py --pretrained-class gpt2 --skip-intrasentence --intrasentence-model GPT2LM --intersentence-model ModelNSP --tokenizer GPT2Tokenizer --max-seq-length 128 --intersentence-load-path models/pretrained_models/GPT2Model_gpt2_0.0005.pth --batch-size 1 --input-file $(INPUT_FILE) --output-dir $(OUTPUT_DIR) $(FLAGS)
 
 gpt2-medium:
 	source ../../universal-computation/path.sh && \
@@ -68,7 +68,7 @@ ensemble:
 
 antibias:
 	source ../../universal-computation/path.sh && \
-	python3 eval_generative_models.py --pretrained-class gpt2 --intrasentence-model GPT2LMAntibias --intersentence-model ModelNSP --tokenizer GPT2Tokenizer --max-seq-length 128 --intersentence-load-path ../../universal-computation/models/05-23-fpt_antibias-antibias-338975.pt --batch-size 1 --input-file $(INPUT_FILE) --output-dir $(OUTPUT_DIR) $(FLAGS)
+	python3 eval_generative_models.py --pretrained-class antibias --skip-intrasentence --intrasentence-model GPT2LMAntibias --intersentence-model ModelNSP --tokenizer GPT2Tokenizer --max-seq-length 128 --batch-size 1 --input-file $(INPUT_FILE) --output-dir $(OUTPUT_DIR) $(FLAGS)
 
 # python3 eval_generative_models.py
 # 	--pretrained-class gpt2

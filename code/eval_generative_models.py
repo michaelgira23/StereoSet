@@ -70,7 +70,7 @@ class BiasEvaluator(object):
         self.PRETRAINED_CLASS = pretrained_class
         self.TOKENIZER = tokenizer
         self.tokenizer = getattr(transformers, self.TOKENIZER).from_pretrained(
-            self.PRETRAINED_CLASS)
+            self.PRETRAINED_CLASS if self.PRETRAINED_CLASS != 'antibias' else 'gpt2')
 
         self.INTRASENTENCE_MODEL = intrasentence_model
         self.INTRASENTENCE_LOAD_PATH = intrasentence_load_path
@@ -153,7 +153,7 @@ class BiasEvaluator(object):
 
     def evaluate_intersentence(self):
         model = getattr(models, self.INTERSENTENCE_MODEL)(
-            self.PRETRAINED_CLASS).to(self.device)
+            self.PRETRAINED_CLASS).to(self.device) if self.INTERSENTENCE_MODEL != 'GPT2LMAntibias' else antibias_model(self.device)
 
         if self.PRETRAINED_CLASS == "gpt2-xl":
             model = amp.initialize(model, opt_level="O3")
@@ -163,6 +163,10 @@ class BiasEvaluator(object):
         initial_token_probabilities = model(start_token)
         initial_token_probabilities = torch.softmax(
             initial_token_probabilities[0], dim=-1)
+
+        print(len(initial_token_probabilities))
+        print(initial_token_probabilities[0].shape)
+
         assert initial_token_probabilities.shape[0] == 1
         assert initial_token_probabilities.shape[1] == 1
 
@@ -260,7 +264,7 @@ class BiasEvaluator(object):
         nsp_dim = 300
 
         model = getattr(models, self.INTERSENTENCE_MODEL)(
-            self.PRETRAINED_CLASS, nsp_dim=nsp_dim).to(self.device) if self.INTERSENTENCE_MODEL != 'GPT2LMAntibias' else antibias_model(self.device)
+            self.PRETRAINED_CLASS, nsp_dim=nsp_dim, device=self.device).to(self.device)
 
         if "gpt2" in args.tokenizer.lower():
             print("Adding <PAD> token to tokenizer...")
@@ -286,6 +290,10 @@ class BiasEvaluator(object):
             token_type_ids = token_type_ids.to(self.device)
             outputs = model(input_ids, token_type_ids=token_type_ids,
                             attention_mask=attention_mask)
+
+            # print(len(outputs))
+            # print(outputs[0].shape)
+            # print(outputs[0])
 
             if type(outputs) == tuple:
                 outputs = outputs[0]
