@@ -17,44 +17,77 @@ from models import models
 
 init()
 
+
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument("--pretrained-class", default="gpt2", type=str,
+    parser.add_argument("--pretrained-class",
+                        default="gpt2",
+                        type=str,
                         help="Choose the pretrained model to load.")
     parser.add_argument("--no-cuda", default=False, action="store_true")
     parser.add_argument("--batch-size", default=10, type=int)
-    parser.add_argument("--input-file", default="../data/dev.json",
-                        type=str, help="Choose the dataset to evaluate on.")
-    parser.add_argument("--output-dir", default="predictions/", type=str,
-                        help="Choose the output directory to store predictions in.")
-    parser.add_argument("--intrasentence-model",
-                        default="GPT2LM", type=str,
-                        help="Choose a model architecture for the intrasentence task.")
-    parser.add_argument("--intrasentence-load-path", default=None,
-                        help="Load a pretrained model for the intrasentence task.")
+    parser.add_argument("--input-file",
+                        default="../data/dev.json",
+                        type=str,
+                        help="Choose the dataset to evaluate on.")
+    parser.add_argument(
+        "--output-dir",
+        default="predictions/",
+        type=str,
+        help="Choose the output directory to store predictions in.")
+    parser.add_argument(
+        "--intrasentence-model",
+        default="GPT2LM",
+        type=str,
+        help="Choose a model architecture for the intrasentence task.")
+    parser.add_argument(
+        "--intrasentence-load-path",
+        default=None,
+        help="Load a pretrained model for the intrasentence task.")
 
     parser.add_argument("--intersentence-model",
-                        default="ModelNSP", type=str, help="Choose a intersentence model architecture.")
-    parser.add_argument("--intersentence-load-path", default=None, 
-                        help="Load a pretrained model for the intersentence task.")
+                        default="ModelNSP",
+                        type=str,
+                        help="Choose a intersentence model architecture.")
+    parser.add_argument(
+        "--intersentence-load-path",
+        default=None,
+        help="Load a pretrained model for the intersentence task.")
 
     parser.add_argument("--tokenizer", default="GPT2Tokenizer", type=str)
     parser.add_argument("--max-seq-length", type=int, default=64)
     parser.add_argument("--unconditional_start_token",
-                        default="<|endoftext|>", type=str, help="Beginning of sequence token.")
+                        default="<|endoftext|>",
+                        type=str,
+                        help="Beginning of sequence token.")
     parser.add_argument("--skip-intersentence",
-                        default=False, action="store_true", help="Skip the intersentence task.")
+                        default=False,
+                        action="store_true",
+                        help="Skip the intersentence task.")
     parser.add_argument("--skip-intrasentence",
-                        default=False, action="store_true", help="SKip the intrasentence task.")
+                        default=False,
+                        action="store_true",
+                        help="SKip the intrasentence task.")
     parser.add_argument("--small", default=False, action="store_true")
     return parser.parse_args()
 
 
 class BiasEvaluator(object):
-    def __init__(self, pretrained_class="gpt2", no_cuda=False, batch_size=51, input_file="data/bias.json",
-                 intrasentence_model="GPT2LM", intrasentence_load_path=None, intersentence_model="ModelNSP",
-                 intersentence_load_path=None, tokenizer="GPT2Tokenizer", unconditional_start_token="<|endoftext|>",
-                 skip_intrasentence=False, skip_intersentence=False, max_seq_length=64, small=False,
+    def __init__(self,
+                 pretrained_class="gpt2",
+                 no_cuda=False,
+                 batch_size=51,
+                 input_file="data/bias.json",
+                 intrasentence_model="GPT2LM",
+                 intrasentence_load_path=None,
+                 intersentence_model="ModelNSP",
+                 intersentence_load_path=None,
+                 tokenizer="GPT2Tokenizer",
+                 unconditional_start_token="<|endoftext|>",
+                 skip_intrasentence=False,
+                 skip_intersentence=False,
+                 max_seq_length=64,
+                 small=False,
                  output_dir="predictions/"):
         print(f"Loading {input_file}...")
         self.BATCH_SIZE = batch_size
@@ -69,7 +102,8 @@ class BiasEvaluator(object):
         self.PRETRAINED_CLASS = pretrained_class
         self.TOKENIZER = tokenizer
         self.tokenizer = getattr(transformers, self.TOKENIZER).from_pretrained(
-            self.PRETRAINED_CLASS)
+            self.PRETRAINED_CLASS
+            if self.PRETRAINED_CLASS != 'gpt2-unprejudiced' else 'gpt2')
 
         self.INTRASENTENCE_MODEL = intrasentence_model
         self.INTRASENTENCE_LOAD_PATH = intrasentence_load_path
@@ -77,35 +111,47 @@ class BiasEvaluator(object):
         self.INTERSENTENCE_LOAD_PATH = intersentence_load_path
         self.max_seq_length = max_seq_length
 
-        print("---------------------------------------------------------------")
         print(
-            f"{Fore.LIGHTCYAN_EX}                     ARGUMENTS                 {Style.RESET_ALL}")
+            "---------------------------------------------------------------")
         print(
-            f"{Fore.LIGHTCYAN_EX}Pretrained class:{Style.RESET_ALL} {pretrained_class}")
-        print(f"{Fore.LIGHTCYAN_EX}Unconditional Start Token: {Style.RESET_ALL} {self.UNCONDITIONAL_START_TOKEN}")
+            f"{Fore.LIGHTCYAN_EX}                     ARGUMENTS                 {Style.RESET_ALL}"
+        )
+        print(
+            f"{Fore.LIGHTCYAN_EX}Pretrained class:{Style.RESET_ALL} {pretrained_class}"
+        )
+        print(
+            f"{Fore.LIGHTCYAN_EX}Unconditional Start Token: {Style.RESET_ALL} {self.UNCONDITIONAL_START_TOKEN}"
+        )
         print(f"{Fore.LIGHTCYAN_EX}Tokenizer:{Style.RESET_ALL} {tokenizer}")
         print(
-            f"{Fore.LIGHTCYAN_EX}Skip Intrasentence:{Style.RESET_ALL} {self.SKIP_INTRASENTENCE}")
+            f"{Fore.LIGHTCYAN_EX}Skip Intrasentence:{Style.RESET_ALL} {self.SKIP_INTRASENTENCE}"
+        )
         print(
-            f"{Fore.LIGHTCYAN_EX}Intrasentence Model:{Style.RESET_ALL} {self.INTRASENTENCE_MODEL}")
+            f"{Fore.LIGHTCYAN_EX}Intrasentence Model:{Style.RESET_ALL} {self.INTRASENTENCE_MODEL}"
+        )
         print(
-            f"{Fore.LIGHTCYAN_EX}Skip Intersentence:{Style.RESET_ALL} {self.SKIP_INTERSENTENCE}")
+            f"{Fore.LIGHTCYAN_EX}Skip Intersentence:{Style.RESET_ALL} {self.SKIP_INTERSENTENCE}"
+        )
         print(
-            f"{Fore.LIGHTCYAN_EX}Intersentence Model:{Style.RESET_ALL} {self.INTERSENTENCE_MODEL}")
+            f"{Fore.LIGHTCYAN_EX}Intersentence Model:{Style.RESET_ALL} {self.INTERSENTENCE_MODEL}"
+        )
         print(f"{Fore.LIGHTCYAN_EX}CUDA:{Style.RESET_ALL} {self.cuda}")
-        print("---------------------------------------------------------------")
+        print(
+            "---------------------------------------------------------------")
 
     def evaluate_intrasentence(self):
         print()
         print(
-            f"{Fore.LIGHTRED_EX}Evaluating bias on intrasentence tasks...{Style.RESET_ALL}")
+            f"{Fore.LIGHTRED_EX}Evaluating bias on intrasentence tasks...{Style.RESET_ALL}"
+        )
 
         model = getattr(models, self.INTRASENTENCE_MODEL)(
             self.PRETRAINED_CLASS).to(self.device)
         model.eval()
 
-        start_token = torch.tensor(self.tokenizer.encode(
-            self.UNCONDITIONAL_START_TOKEN)).to(self.device).unsqueeze(0)
+        start_token = torch.tensor(
+            self.tokenizer.encode(self.UNCONDITIONAL_START_TOKEN)).to(
+                self.device).unsqueeze(0)
         initial_token_probabilities = model(start_token)
         initial_token_probabilities = torch.softmax(
             initial_token_probabilities[0], dim=-1)
@@ -121,18 +167,20 @@ class BiasEvaluator(object):
                 probabilities = {}
                 tokens = self.tokenizer.encode(sentence.sentence)
                 joint_sentence_probability = [
-                    initial_token_probabilities[0, 0, tokens[0]].item()]
-                tokens_tensor = torch.tensor(
-                    tokens).to(self.device).unsqueeze(0)
+                    initial_token_probabilities[0, 0, tokens[0]].item()
+                ]
+                tokens_tensor = torch.tensor(tokens).to(
+                    self.device).unsqueeze(0)
                 output = torch.softmax(model(tokens_tensor)[0], dim=-1)
                 for idx in range(1, len(tokens)):
                     joint_sentence_probability.append(
-                        output[0, idx-1, tokens[idx]].item())
+                        output[0, idx - 1, tokens[idx]].item())
 
                 # ensure that we have a probability on every token
                 assert len(tokens) == len(joint_sentence_probability)
 
-                score = np.sum([np.log2(i) for i in joint_sentence_probability]) 
+                score = np.sum(
+                    [np.log2(i) for i in joint_sentence_probability])
                 score /= len(joint_sentence_probability)
                 score = np.power(2, score)
 
@@ -150,8 +198,9 @@ class BiasEvaluator(object):
         if self.PRETRAINED_CLASS == "gpt2-xl":
             model = amp.initialize(model, opt_level="O3")
 
-        start_token = torch.tensor(self.tokenizer.encode(
-            self.UNCONDITIONAL_START_TOKEN)).to(self.device).unsqueeze(0)
+        start_token = torch.tensor(
+            self.tokenizer.encode(self.UNCONDITIONAL_START_TOKEN)).to(
+                self.device).unsqueeze(0)
         initial_token_probabilities = model(start_token)
         initial_token_probabilities = torch.softmax(
             initial_token_probabilities[0], dim=-1)
@@ -177,24 +226,29 @@ class BiasEvaluator(object):
                 probabilities = {}
 
                 tokens = self.tokenizer.encode(full_sentence)
-                tokens_tensor = torch.tensor(
-                    tokens).to(self.device).unsqueeze(0)
+                tokens_tensor = torch.tensor(tokens).to(
+                    self.device).unsqueeze(0)
 
                 context_length = len(self.tokenizer.encode(context))
 
                 # gets the probability of the first item in the biased sentence
                 sentence_probability = [
-                    initial_token_probabilities[0, 0, tokens[context_length]].item()]
+                    initial_token_probabilities[0, 0,
+                                                tokens[context_length]].item()
+                ]
 
                 # gets the probability of the first token in the context sentence
                 context_probability = [
-                    initial_token_probabilities[0, 0, tokens[0]].item()]
+                    initial_token_probabilities[0, 0, tokens[0]].item()
+                ]
 
                 # sets up the positional tensor
                 positions = [
-                    0 if idx < context_length else 1 for idx in range(len(tokens))]
-                positions_tensor = torch.tensor(
-                    positions).unsqueeze(0).to(self.device)
+                    0 if idx < context_length else 1
+                    for idx in range(len(tokens))
+                ]
+                positions_tensor = torch.tensor(positions).unsqueeze(0).to(
+                    self.device)
 
                 logits = model(tokens_tensor)
 
@@ -204,34 +258,35 @@ class BiasEvaluator(object):
                 # iterate over the context and setup those probabilities.
                 for idx in range(1, context_length):
                     # ASSUMPTION: the 0th output corresponds to the probability of the 1st token.
-                    context_probability.append(
-                        output[0, idx-1, tokens[idx]].item())
+                    context_probability.append(output[0, idx - 1,
+                                                      tokens[idx]].item())
 
                 # iterate over the sentence and setup those probabilities.
                 for idx in range(1, len(tokens)):
                     # ASSUMPTION: the 0th output corresponds to the probability of the 1st token.
-                    sentence_probability.append(
-                        output[0, idx-1, tokens[idx]].item())
+                    sentence_probability.append(output[0, idx - 1,
+                                                       tokens[idx]].item())
 
                 full_sentence = f"{sentence.sentence}"
                 tokens = self.tokenizer.encode(full_sentence)
-                tokens_tensor = torch.tensor(
-                    tokens).to(self.device).unsqueeze(0)
+                tokens_tensor = torch.tensor(tokens).to(
+                    self.device).unsqueeze(0)
                 no_context_probability = [
-                    initial_token_probabilities[0, 0, tokens[0]].item()]
+                    initial_token_probabilities[0, 0, tokens[0]].item()
+                ]
                 logits = model(tokens_tensor)
                 output = torch.softmax(logits[0], dim=-1)
 
                 # setup the probability for the sentence if we didn't provide the context
                 for idx in range(1, len(tokens)):
-                    no_context_probability.append(
-                        output[0, idx-1, tokens[idx]].item())
+                    no_context_probability.append(output[0, idx - 1,
+                                                         tokens[idx]].item())
 
-                context_score = np.mean([np.log2(i)
-                                         for i in context_probability])
+                context_score = np.mean(
+                    [np.log2(i) for i in context_probability])
 
-                sentence_score = np.mean([np.log2(i)
-                                          for i in sentence_probability])
+                sentence_score = np.mean(
+                    [np.log2(i) for i in sentence_probability])
                 no_context_score = np.mean(
                     [np.log2(i) for i in no_context_probability])
 
@@ -248,7 +303,8 @@ class BiasEvaluator(object):
     def evaluate_nsp_intersentence(self):
         print()
         print(
-            f"{Fore.LIGHTBLUE_EX}Evaluating bias on intersentence tasks...{Style.RESET_ALL}")
+            f"{Fore.LIGHTBLUE_EX}Evaluating bias on intersentence tasks...{Style.RESET_ALL}"
+        )
         nsp_dim = 300
         model = getattr(models, self.INTERSENTENCE_MODEL)(
             self.PRETRAINED_CLASS, nsp_dim=nsp_dim).to(self.device)
@@ -267,15 +323,19 @@ class BiasEvaluator(object):
 
         model.eval()
         dataset = IntersentenceDataset(self.tokenizer, args)
-        dataloader = DataLoader(
-            dataset, batch_size=args.batch_size, shuffle=True, num_workers=0)
+        dataloader = DataLoader(dataset,
+                                batch_size=args.batch_size,
+                                shuffle=True,
+                                num_workers=0)
         predictions = []
 
-        for batch_num, batch in tqdm(enumerate(dataloader), total=len(dataloader)):
+        for batch_num, batch in tqdm(enumerate(dataloader),
+                                     total=len(dataloader)):
             input_ids, token_type_ids, attention_mask, sentence_id = batch
             input_ids = input_ids.to(self.device)
             token_type_ids = token_type_ids.to(self.device)
-            outputs = model(input_ids, token_type_ids=token_type_ids,
+            outputs = model(input_ids,
+                            token_type_ids=token_type_ids,
                             attention_mask=attention_mask)
 
             if type(outputs) == tuple:
@@ -314,6 +374,8 @@ if __name__ == "__main__":
     evaluator = BiasEvaluator(**vars(args))
     results = evaluator.evaluate()
     output_file = os.path.join(
-        args.output_dir, f"predictions_{args.pretrained_class}_{args.intersentence_model}_{args.intrasentence_model}.json")
+        args.output_dir,
+        f"predictions_{args.pretrained_class}_{args.intersentence_model}_{args.intrasentence_model}.json"
+    )
     with open(output_file, "w+") as f:
         json.dump(results, f, indent=2)
